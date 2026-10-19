@@ -67,3 +67,7 @@ Options live in `/config` under the `waifufy` plugin: port, overlay path, minimu
 Environment overrides for the overlay:
 - `WAIFUFY_PORT`: the port it listens on.
 - `WAIFUFY_HOME`: the folder holding `waifufy.config.json` and `assets/`. By default that's the repo it was built from.
+
+## License
+
+The code is [MIT](LICENSE): fork it, change it, ship it. This covers only the code in this repo. Live2D models, voices and the Cubism Core keep their own licenses, so check those before you share a build that bundles them.
