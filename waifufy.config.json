@@ -1,0 +1,43 @@
+{
+  "model": "models/rem/ac_base_rem01.model3.json",
+  "scale": 0.97,
+  "volume": 0.8,
+  "idleFps": 60,
+  "reactionFps": 60,
+  "trackMouse": true,
+  "focus": {
+    "x": 0.5,
+    "y": 0.15,
+    "radius": 400
+  },
+  "idle": {
+    "act": "AC_rem01_act_normal_w",
+    "face": "AC_rem01_face_normal_w"
+  },
+  "reactions": {
+    "success": {
+      "act": "AC_rem01_act_egao",
+      "face": "AC_rem01_face_egao",
+      "voice": "voices/success.mp3"
+    },
+    "fail": {
+      "act": "AC_rem01_act_kurushimu",
+      "face": "AC_rem01_face_kanashimu_w",
+      "voice": "voices/fail.mp3"
+    },
+    "confirm": {
+      "act": "AC_rem01_act_kangaeru",
+      "face": "AC_rem01_face_komaru",
+      "voice": "voices/confirm.mp3"
+    }
+  },
+  "view": {
+    "crop": {
+      "x": 0.227500057220459,
+      "y": 0.011633365122477212,
+      "w": 0.5074999809265137,
+      "h": 0.5500332252502441
+    },
+    "size": 2.25
+  }
+}

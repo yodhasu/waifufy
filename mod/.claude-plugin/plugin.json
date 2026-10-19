@@ -1,0 +1,28 @@
+{
+  "name": "waifufy",
+  "version": "0.1.0",
+  "description": "Live2D overlay reacts with a motion and voice when a task succeeds, fails, or needs your confirmation.",
+  "userConfig": {
+    "port": {
+      "type": "number",
+      "title": "Overlay port",
+      "description": "Port of the Waifufy overlay on 127.0.0.1.",
+      "default": 47823
+    },
+    "overlayExe": {
+      "type": "string",
+      "title": "Overlay executable",
+      "description": "Started when the overlay is not running.",
+      "default": "C:\\Users\\mybook\\Documents\\Work\\waifufy\\overlay\\src-tauri\\target\\release\\waifufy.exe"
+    },
+    "minTurnSeconds": {
+      "type": "number",
+      "title": "Minimum turn length (s)",
+      "description": "A finished turn shorter than this does not count as a task.",
+      "default": 5
+    },
+    "onSuccess": { "type": "boolean", "title": "React on success", "description": "Celebrate when a task finishes.", "default": true },
+    "onFail": { "type": "boolean", "title": "React on failure", "description": "Apologise when a turn dies on an error.", "default": true },
+    "onConfirm": { "type": "boolean", "title": "React on confirmation", "description": "Call you over when Claude needs your answer.", "default": true }
+  }
+}

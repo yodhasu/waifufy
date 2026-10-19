@@ -1,0 +1,11 @@
+node_modules/
+overlay/dist/
+overlay/src-tauri/target/
+overlay/src-tauri/gen/
+# Proprietary: Live2D Cubism Core and third-party model/voice assets.
+overlay/public/live2dcubismcore.min.js
+assets/
+mod/.claude-plugin/types/
+# Local-only
+.claude/settings.local.json
+graft/
