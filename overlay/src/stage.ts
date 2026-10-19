@@ -24,13 +24,16 @@ export type Config = {
   view?: View
 }
 /**
- * Clicking her head pats her. Each pat in a row (none for `resetSeconds` starts over) plays the
- * last tier whose `from` it has reached; `busy` plays instead while Claude is working.
+ * Pressing and dragging on her head pats her. Each pat in a row (none for `resetSeconds` starts over)
+ * plays the last tier whose `from` it has reached (tiers sorted by `from`). Stroking nonstop then plays
+ * every tier after it, pausing `gapSeconds[n]` after the n-th line (the last entry repeats);
+ * `busy` plays instead while Claude is working.
  */
 export type Headpat = {
   /** CSS pixels around `focus` at view size 1. */
   radius: number
   resetSeconds: number
+  gapSeconds: number[]
   tiers: (Reaction & { from: number })[]
   busy?: Reaction
 }

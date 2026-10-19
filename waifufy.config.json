@@ -43,7 +43,12 @@
   },
   "headpat": {
     "radius": 40,
-    "resetSeconds": 30,
+    "resetSeconds": 60,
+    "gapSeconds": [
+      2,
+      1.2,
+      0.5
+    ],
     "tiers": [
       {
         "from": 1,
