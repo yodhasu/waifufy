@@ -7,6 +7,10 @@ A Live2D character sits in the bottom-right corner of your screen and reacts to 
 | `success` | a main-agent turn finishes normally and took at least `minTurnSeconds` (default 5 s) |
 | `fail` | a turn dies on an API error (`turn.complete` error / `StopFailure`) |
 | `confirm` | a permission dialog, an `AskUserQuestion`, or a plan approval (`ExitPlanMode`) |
+| `push` | a `git push` run through Bash or PowerShell succeeds |
+| `danger` | right before a destructive command: `git reset --hard`, force push, `git clean -f`, `git branch -D`, `rm -rf`, … |
+
+**Headpats:** click her head to pat her. Her reaction depends on how many pats in a row she's had: happy at first, then shy, then flustered ("stop slacking off"), then playful scolding. The count resets after `resetSeconds` without a pat. If you pat her while Claude is mid-task, she tells you to get back to work instead. The window stays click-through everywhere except her head.
 
 ## Fork it, make it yours
 
@@ -18,7 +22,8 @@ The model and voices aren't in the repo (they're third-party assets and `assets/
 2. **Motions**: set `idle` and each entry under `reactions` to motion names from your model (file name without `.motion3.json`). `act` is the body motion, `face` is the expression motion.
 3. **Voices**: put audio files in `assets/voices/` and reference them as `voice` per reaction. Leave it out for a silent reaction.
 4. **Framing**: use **Choose display area…** (Ctrl+Alt+E) to crop the character; tweak `scale`, `focus` and `trackMouse` if needed.
-5. **Use cases**: the events come from `mod/` hooks. Add new kinds (e.g. a reaction when tests pass or a commit lands) by posting another `kind` to `/event` from the mod and adding a matching entry under `reactions`. The overlay doesn't care what triggers it, so anything that can `curl` can make your waifu react.
+5. **Headpats**: `headpat.tiers` lists the reactions by pat count (`from` = first pat that uses it), `busy` is the line while Claude is working, and `radius` sizes the clickable head area. Any pose can add `extra` motions on top, like a blush (`face_cheek_on`).
+6. **Use cases**: the events come from `mod/` hooks. Add new kinds (e.g. a reaction when tests pass or a commit lands) by posting another `kind` to `/event` from the mod and adding a matching entry under `reactions`. The overlay doesn't care what triggers it, so anything that can `curl` can make your waifu react.
 
 If you build something fun, share it, but you don't have to.
 
@@ -28,7 +33,7 @@ If you build something fun, share it, but you don't have to.
   - The window is transparent, always on top and click-through, and stays out of Alt+Tab.
   - The tray icon toggles visibility (left-click, or **Ctrl+Alt+W**). It also has Mute voice, Start with Windows and Quit.
   - **Choose display area…** (tray, or **Ctrl+Alt+E**) opens a crop picker: drag or resize the box over the character, set the size, then **Set display**. The overlay resizes to that area, and the choice is saved as `view` in `waifufy.config.json`.
-  - It listens on `127.0.0.1:47823`: `GET /health`, `POST /event {"kind":"success|fail|confirm"}`, and it serves `/config` and `/assets/*`.
+  - It listens on `127.0.0.1:47823`: `GET /health`, `POST /event {"kind":"success|fail|confirm|push|danger"}`, `POST /busy {"id","busy"}` (the mod reports when Claude is mid-turn), and it serves `/config` and `/assets/*`.
 - `mod/`: Claude Code plugin (hooks module) that posts events to the overlay. If the overlay isn't running, the plugin starts it.
 - `waifufy.config.json`: the model, scale (1 = the body fills the frame), fps, each event's body motion, face motion and voice, and the display area.
   - Motions are named by file name, without `.motion3.json`.

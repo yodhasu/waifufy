@@ -2,8 +2,9 @@ import { Application, Ticker, extensions } from 'pixi.js'
 import { Live2DModel, Live2DPlugin, MotionPriority } from 'untitled-pixi-live2d-engine/cubism'
 import { invoke } from '@tauri-apps/api/core'
 
-export type Kind = 'success' | 'fail' | 'confirm'
-export type Pose = { act: string; face: string }
+export type Kind = 'success' | 'fail' | 'confirm' | 'push' | 'danger'
+/** `extra`: more motions layered on top, such as a blush. */
+export type Pose = { act: string; face: string; extra?: string[] }
 export type Reaction = Pose & { voice?: string }
 export type Crop = { x: number; y: number; w: number; h: number }
 /** Which part of the reference frame the overlay shows (`crop`, 0–1 of it) and how big (`size`, 1 = reference). */
@@ -18,8 +19,20 @@ export type Config = {
   /** Where she looks from: `x`/`y` as 0–1 of the full-body reference frame, `radius` the CSS-pixel distance of a full turn. */
   focus?: { x: number; y: number; radius: number }
   idle: Pose
-  reactions: Record<Kind, Reaction>
+  reactions: Partial<Record<Kind, Reaction>>
+  headpat?: Headpat
   view?: View
+}
+/**
+ * Clicking her head pats her. Each pat in a row (none for `resetSeconds` starts over) plays the
+ * last tier whose `from` it has reached; `busy` plays instead while Claude is working.
+ */
+export type Headpat = {
+  /** CSS pixels around `focus` at view size 1. */
+  radius: number
+  resetSeconds: number
+  tiers: (Reaction & { from: number })[]
+  busy?: Reaction
 }
 
 /** The full-body frame every crop is measured in, in CSS pixels. */
@@ -82,11 +95,13 @@ export async function loadStage(container: HTMLElement, width: number, height: n
   }
 
   const pose = (p: Pose, priority: MotionPriority, loop: boolean) => {
-    const list = [p.act, p.face].flatMap((name) => {
+    const list = [p.act, p.face, ...(p.extra ?? [])].flatMap((name) => {
       const hit = motionIndex.get(name)
       if (!hit) console.warn(`[waifufy] unknown motion ${name}`)
       return hit ? [{ ...hit, priority, loop }] : []
     })
+    // A layer the last pose added (a looping blush) would otherwise outlive it.
+    model.internalModel.parallelMotionManager.slice(list.length).forEach((m) => m.stopAllMotions())
     return model.parallelMotion(list)
   }
 

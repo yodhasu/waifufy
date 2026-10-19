@@ -2,28 +2,31 @@ import type { On } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
 
 // Stands in for the engine and the overlay: records each reaction the mod posts.
-function world(on: On, { isOverlayUp = true } = {}) {
+function world(on: On, { isOverlayUp = true, isToolError = false } = {}) {
   const sent: string[] = []
   const launched: string[][] = []
   const checkIns: boolean[] = []
+  const busy: boolean[] = []
   mock.clock(on)
   on('http.fetch', ($, e) => {
     if (!isOverlayUp) throw new Error('connection refused')
     if (e.url.endsWith('/event')) sent.push(JSON.parse(String(e.init?.body)).kind)
     if (e.url.endsWith('/session')) checkIns.push(JSON.parse(String(e.init?.body)).open)
+    if (e.url.endsWith('/busy')) busy.push(JSON.parse(String(e.init?.body)).busy)
     return { value: { status: 204, ok: true, headers: {}, text: '' } }
   })
   on('process.run', ($, e) => {
     launched.push([...e.argv])
     return { value: { exitCode: 0, stdout: '', stderr: '' } } as never
   })
+  on('turn.start', ($, e) => ({ text: e.text, turnId: e.turnId }) as never)
   on('turn.complete', () => ({ text: '' }))
   on('classic.StopFailure', () => ({}) as never)
   on('classic.PermissionRequest', () => ({}) as never)
-  on('tool.call', () => ({ result: {}, text: 'ok' }) as never)
+  on('tool.call', () => ({ result: { interrupted: false }, text: 'ok', isError: isToolError }) as never)
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('session.end', ($, e) => ({ sessionId: e.sessionId }))
-  return { sent, launched, checkIns }
+  return { sent, launched, checkIns, busy }
 }
 
 const settle = async () => {
@@ -111,5 +114,45 @@ describe('waifufy', () => {
     await $.session.end(end('other'))
     await settle()
     expect(checkIns).toEqual([])
+  })
+
+  const shell = (command: string, tool = 'Bash') => ({ tool, command }) as never
+
+  test('a git push that goes through is reported', async ($, on) => {
+    const { sent } = world(on)
+    await $.tool.call(shell('git push -u origin main'))
+    await $.tool.call(shell('git push', 'PowerShell'))
+    await $.tool.call(shell('git status'))
+    await settle()
+    expect(sent).toEqual(['push', 'push'])
+  })
+
+  test('a failed git push stays quiet', async ($, on) => {
+    const { sent } = world(on, { isToolError: true })
+    await $.tool.call(shell('git push'))
+    await settle()
+    expect(sent).toEqual([])
+  })
+
+  test('destructive commands get a warning', async ($, on) => {
+    const { sent } = world(on)
+    for (const command of ['git reset --hard HEAD~1', 'git clean -fd', 'git branch -D old', 'rm -rf build', 'git checkout -- .']) {
+      await $.tool.call(shell(command))
+      await settle()
+    }
+    await $.tool.call(shell('git reset --soft HEAD~1'))
+    await $.tool.call(shell('rm notes.txt'))
+    await settle()
+    // The overlay dedupes repeats; the mod reports each one.
+    expect(sent).toEqual(['danger', 'danger', 'danger', 'danger', 'danger'])
+  })
+
+  test('a main-loop turn marks the session busy until it completes', async ($, on) => {
+    const { busy } = world(on)
+    await $.turn.start({ text: 'hi', turnId: 't1' } as never)
+    await $.turn.start({ text: '', turnId: 't2', agentId: 'sub-1' } as never)
+    await $.turn.complete(turn('answer', 1_000))
+    await settle()
+    expect(busy).toEqual([true, false])
   })
 })

@@ -23,6 +23,8 @@
     },
     "onSuccess": { "type": "boolean", "title": "React on success", "description": "Celebrate when a task finishes.", "default": true },
     "onFail": { "type": "boolean", "title": "React on failure", "description": "Apologise when a turn dies on an error.", "default": true },
-    "onConfirm": { "type": "boolean", "title": "React on confirmation", "description": "Call you over when Claude needs your answer.", "default": true }
+    "onConfirm": { "type": "boolean", "title": "React on confirmation", "description": "Call you over when Claude needs your answer.", "default": true },
+    "onPush": { "type": "boolean", "title": "React on git push", "description": "Report when a git push goes through.", "default": true },
+    "onDanger": { "type": "boolean", "title": "Warn on destructive commands", "description": "Stop you before a hard reset, force push, rm -rf and the like.", "default": true }
   }
 }

@@ -19,7 +19,7 @@ use tauri_plugin_global_shortcut::{Code, ShortcutState};
 use tiny_http::{Header, Method, Response, Server};
 
 const DEFAULT_PORT: u16 = 47823;
-const KINDS: [&str; 3] = ["success", "fail", "confirm"];
+const KINDS: [&str; 5] = ["success", "fail", "confirm", "push", "danger"];
 const TOGGLE_SHORTCUT: &str = "ctrl+alt+w";
 const EDITOR_SHORTCUT: &str = "ctrl+alt+e";
 
@@ -129,6 +129,34 @@ struct SessionBody {
 
 fn default_open() -> bool {
     true
+}
+
+#[derive(Deserialize)]
+struct BusyBody {
+    id: String,
+    busy: bool,
+}
+
+/// Sessions whose main loop is mid-turn, with when each last said so.
+type Busy = Arc<Mutex<HashMap<String, Instant>>>;
+
+/// A busy flag nobody refreshes (the CLI heartbeat does, every 20 s) was left by a session that died mid-turn.
+const BUSY_TIMEOUT: Duration = Duration::from_secs(90);
+
+#[tauri::command]
+fn is_busy(busy: tauri::State<Busy>) -> bool {
+    let mut live = busy.lock().unwrap();
+    live.retain(|_, seen| seen.elapsed() < BUSY_TIMEOUT);
+    !live.is_empty()
+}
+
+/// Lets clicks land on the overlay while the cursor is over her head, so she can be patted;
+/// everywhere else they still pass through.
+#[tauri::command]
+fn set_pattable(app: AppHandle, on: bool) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.set_ignore_cursor_events(!on);
+    }
 }
 
 /// Claude Code CLI sessions alive right now, by id, with when each last checked in.
@@ -243,7 +271,7 @@ fn serve_file(root: &Path, rel: &str) -> Reply {
 }
 
 /// Local-only HTTP endpoint shared by every Claude Code session.
-fn serve(app: AppHandle, root: PathBuf, sessions: Sessions) {
+fn serve(app: AppHandle, root: PathBuf, sessions: Sessions, busy: Busy) {
     let server = match Server::http(("127.0.0.1", port())) {
         Ok(s) => s,
         Err(e) => {
@@ -280,6 +308,22 @@ fn serve(app: AppHandle, root: PathBuf, sessions: Sessions) {
                         reply(204, Vec::new(), "text/plain")
                     }
                     _ => reply(400, b"bad session".to_vec(), "text/plain"),
+                }
+            }
+            (Method::Post, "/busy") => {
+                let mut body = String::new();
+                let _ = req.as_reader().take(4096).read_to_string(&mut body);
+                match serde_json::from_str::<BusyBody>(&body) {
+                    Ok(b) if !b.id.is_empty() => {
+                        let mut live = busy.lock().unwrap();
+                        if b.busy {
+                            live.insert(b.id, Instant::now());
+                        } else {
+                            live.remove(&b.id);
+                        }
+                        reply(204, Vec::new(), "text/plain")
+                    }
+                    _ => reply(400, b"bad busy".to_vec(), "text/plain"),
                 }
             }
             (Method::Get, "/config") => serve_file(&root, "waifufy.config.json"),
@@ -323,6 +367,7 @@ const CURSOR_POLL: Duration = Duration::from_millis(66);
 
 /// The overlay ignores the mouse, so it never hears pointer events: poll the global cursor instead and
 /// send its window-relative position (CSS pixels) whenever it moves while the overlay is shown.
+/// The page uses it both to turn her toward the cursor and to tell when it is over her head.
 fn track_cursor(app: AppHandle) {
     let mut last = (f64::NAN, f64::NAN);
     loop {
@@ -420,17 +465,17 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![server_base, save_view, close_editor])
+        .invoke_handler(tauri::generate_handler![server_base, save_view, close_editor, is_busy, set_pattable])
         .setup(|app| {
             let sessions = Sessions::default();
+            let busy = Busy::default();
+            app.manage(busy.clone());
             let (handle, live) = (app.handle().clone(), sessions.clone());
-            thread::spawn(move || serve(handle, home(), live));
+            thread::spawn(move || serve(handle, home(), live, busy));
             let handle = app.handle().clone();
             thread::spawn(move || reap_sessions(handle, sessions));
-            if read_config()["trackMouse"].as_bool().unwrap_or(true) {
-                let handle = app.handle().clone();
-                thread::spawn(move || track_cursor(handle));
-            }
+            let handle = app.handle().clone();
+            thread::spawn(move || track_cursor(handle));
             build_tray(app.handle())?;
             let win = app.get_webview_window("main").expect("main window");
             apply_view(&win, &read_config()["view"])?;

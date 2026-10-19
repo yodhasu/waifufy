@@ -29,6 +29,62 @@
       "act": "AC_rem01_act_kangaeru",
       "face": "AC_rem01_face_komaru",
       "voice": "voices/confirm.mp3"
+    },
+    "push": {
+      "act": "AC_rem01_act_unazuku",
+      "face": "AC_rem01_face_egao02",
+      "voice": "voices/push.mp3"
+    },
+    "danger": {
+      "act": "AC_rem01_act_bikkuri",
+      "face": "AC_rem01_face_shinken02_w",
+      "voice": "voices/danger.mp3"
+    }
+  },
+  "headpat": {
+    "radius": 40,
+    "resetSeconds": 30,
+    "tiers": [
+      {
+        "from": 1,
+        "act": "AC_rem01_act_hohoemu",
+        "face": "AC_rem01_face_egao04",
+        "extra": [
+          "AC_rem01_face_cheek_on"
+        ],
+        "voice": "voices/pat_happy.mp3"
+      },
+      {
+        "from": 2,
+        "act": "AC_rem01_act_nayamu",
+        "face": "AC_rem01_face_tere_w",
+        "extra": [
+          "AC_rem01_face_cheek_on"
+        ]
+      },
+      {
+        "from": 4,
+        "act": "AC_rem01_act_punpun",
+        "face": "AC_rem01_face_punpun",
+        "extra": [
+          "AC_rem01_face_cheek_on"
+        ],
+        "voice": "voices/pat_stop.mp3"
+      },
+      {
+        "from": 7,
+        "act": "AC_rem01_act_suneru",
+        "face": "AC_rem01_face_suneru",
+        "extra": [
+          "AC_rem01_face_cheek_on"
+        ],
+        "voice": "voices/pat_tease.mp3"
+      }
+    ],
+    "busy": {
+      "act": "AC_rem01_act_ikaru",
+      "face": "AC_rem01_face_ikaru02",
+      "voice": "voices/pat_busy.mp3"
     }
   },
   "view": {
